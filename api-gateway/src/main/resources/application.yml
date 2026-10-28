@@ -1,0 +1,46 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          # Active la création dynamique automatique de routes à partir des services Eureka
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        # Route dynamique vers le microservice Residents
+        - id: service-residents-route
+          uri: lb://SERVICE-RESIDENTS
+          predicates:
+            - Path=/api/residents/**, /api/apartments/**
+
+        # Route dynamique vers le microservice Incidents
+        - id: service-incidents-route
+          uri: lb://SERVICE-INCIDENTS
+          predicates:
+            - Path=/api/tickets/**, /api/work-orders/**
+
+        # Route dynamique vers le microservice Finances
+        - id: service-finances-route
+          uri: lb://SERVICE-FINANCES
+          predicates:
+            - Path=/api/charges/**, /api/payments/**, /api/finances/**
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
