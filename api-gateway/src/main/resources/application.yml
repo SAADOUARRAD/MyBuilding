@@ -40,6 +40,9 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
 
 management:
+  endpoint:
+    gateway:
+      enabled: true
   endpoints:
     web:
       exposure:
