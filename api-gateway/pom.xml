@@ -13,7 +13,7 @@
     </parent>
 
     <artifactId>api-gateway</artifactId>
-    <name>API Gateway - Routing & Load Balancing</name>
+    <name>API Gateway - Routing and Load Balancing</name>
     <description>Passerelle API avec routage dynamique basé sur Eureka</description>
 
     <dependencies>
