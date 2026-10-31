@@ -1,7 +1,9 @@
 package com.mybuilding.finances.controller;
 
-import com.mybuilding.finances.model.Charge;
+import com.mybuilding.finances.dto.ChargeRequestDTO;
+import com.mybuilding.finances.dto.ChargeResponseDTO;
 import com.mybuilding.finances.repository.ChargeRepository;
+import com.mybuilding.finances.service.ChargeService;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -15,39 +17,51 @@ import java.util.List;
 @RequestMapping("/api/charges")
 public class ChargeController {
 
+    private final ChargeService chargeService;
     private final ChargeRepository chargeRepository;
 
-    public ChargeController(ChargeRepository chargeRepository) {
+    public ChargeController(ChargeService chargeService, ChargeRepository chargeRepository) {
+        this.chargeService = chargeService;
         this.chargeRepository = chargeRepository;
     }
 
     @PostConstruct
     public void initData() {
         if (chargeRepository.count() == 0) {
-            chargeRepository.save(new Charge(1L, "2026-11", new BigDecimal("1500.00")));
-            chargeRepository.save(new Charge(2L, "2026-11", new BigDecimal("1200.00")));
+            chargeService.create(new ChargeRequestDTO(1L, "2026-11", new BigDecimal("1500.00")));
+            chargeService.create(new ChargeRequestDTO(2L, "2026-11", new BigDecimal("1200.00")));
         }
     }
 
     @GetMapping
-    public List<Charge> getAll() {
-        return chargeRepository.findAll();
+    public ResponseEntity<List<ChargeResponseDTO>> getAll() {
+        return ResponseEntity.ok(chargeService.getAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Charge> getById(@PathVariable Long id) {
-        return chargeRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<ChargeResponseDTO> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(chargeService.getById(id));
+    }
+
+    @GetMapping("/apartment/{apartmentId}")
+    public ResponseEntity<List<ChargeResponseDTO>> getByApartment(@PathVariable Long apartmentId) {
+        return ResponseEntity.ok(chargeService.getByApartmentId(apartmentId));
+    }
+
+    @GetMapping("/unpaid")
+    public ResponseEntity<List<ChargeResponseDTO>> getUnpaid() {
+        return ResponseEntity.ok(chargeService.getUnpaid());
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@Valid @RequestBody Charge charge) {
-        if (chargeRepository.existsByApartmentIdAndPeriode(charge.getApartmentId(), charge.getPeriode())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body("Une charge existe déjà pour cet appartement et cette période");
-        }
-        Charge saved = chargeRepository.save(charge);
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+    public ResponseEntity<ChargeResponseDTO> create(@Valid @RequestBody ChargeRequestDTO dto) {
+        ChargeResponseDTO created = chargeService.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        chargeService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }
