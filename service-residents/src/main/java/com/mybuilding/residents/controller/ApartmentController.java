@@ -2,15 +2,12 @@ package com.mybuilding.residents.controller;
 
 import com.mybuilding.residents.dto.ApartmentRequestDTO;
 import com.mybuilding.residents.dto.ApartmentResponseDTO;
-import com.mybuilding.residents.repository.ApartmentRepository;
 import com.mybuilding.residents.service.ApartmentService;
-import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -19,20 +16,9 @@ import java.util.Map;
 public class ApartmentController {
 
     private final ApartmentService apartmentService;
-    private final ApartmentRepository apartmentRepository;
 
-    public ApartmentController(ApartmentService apartmentService, ApartmentRepository apartmentRepository) {
+    public ApartmentController(ApartmentService apartmentService) {
         this.apartmentService = apartmentService;
-        this.apartmentRepository = apartmentRepository;
-    }
-
-    @PostConstruct
-    public void initData() {
-        if (apartmentRepository.count() == 0) {
-            apartmentService.create(new ApartmentRequestDTO("A-101", 1, new BigDecimal("85.50"), 1L));
-            apartmentService.create(new ApartmentRequestDTO("A-102", 1, new BigDecimal("92.00"), 2L));
-            apartmentService.create(new ApartmentRequestDTO("B-201", 2, new BigDecimal("110.00"), null));
-        }
     }
 
     @GetMapping

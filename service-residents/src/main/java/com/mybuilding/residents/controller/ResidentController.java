@@ -2,10 +2,7 @@ package com.mybuilding.residents.controller;
 
 import com.mybuilding.residents.dto.ResidentRequestDTO;
 import com.mybuilding.residents.dto.ResidentResponseDTO;
-import com.mybuilding.residents.model.RoleResident;
-import com.mybuilding.residents.repository.ResidentRepository;
 import com.mybuilding.residents.service.ResidentService;
-import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,19 +17,9 @@ import java.util.Map;
 public class ResidentController {
 
     private final ResidentService residentService;
-    private final ResidentRepository residentRepository;
 
-    public ResidentController(ResidentService residentService, ResidentRepository residentRepository) {
+    public ResidentController(ResidentService residentService) {
         this.residentService = residentService;
-        this.residentRepository = residentRepository;
-    }
-
-    @PostConstruct
-    public void initData() {
-        if (residentRepository.count() == 0) {
-            residentService.create(new ResidentRequestDTO("Ahmed Alami", "ahmed.alami@mybuilding.ma", "+212600112233", RoleResident.PROPRIETAIRE));
-            residentService.create(new ResidentRequestDTO("Sara Bennani", "sara.bennani@mybuilding.ma", "+212600445566", RoleResident.LOCATAIRE));
-        }
     }
 
     @GetMapping
