@@ -218,5 +218,5 @@ Une fois tous les services démarrés, Eureka affiche les 4 clients connectés a
 
 ## 6. Versionnage Git & Jalon Livré
 
-* **Tag officiel du jalon** : `jalon-1` / `v1.0.0-jalon1`
+* **Tag officiel du jalon** : `v1.0` (`jalon-1` / `v1.0.0-jalon1`)
 * **Dépôt GitHub** : [https://github.com/SAADOUARRAD/MyBuilding](https://github.com/SAADOUARRAD/MyBuilding)
