@@ -14,10 +14,10 @@
 
     <artifactId>api-gateway</artifactId>
     <name>API Gateway - Routing and Load Balancing</name>
-    <description>Passerelle API avec routage dynamique basé sur Eureka</description>
+    <description>Passerelle API avec routage dynamique et statique basé sur Eureka</description>
 
     <dependencies>
-        <!-- Spring Cloud Gateway (Reactive) -->
+        <!-- Spring Cloud Gateway (Reactive WebFlux) -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-gateway</artifactId>
@@ -33,6 +33,12 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+
+        <!-- Spring Cloud Config Client -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
 
         <dependency>

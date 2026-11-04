@@ -905,6 +905,171 @@
           }
         }
       ]
+    },
+    {
+      "name": "04 - Config Server",
+      "item": [
+        {
+          "name": "4.1 - Configuration de service-residents",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"PropertySources présentes\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.propertySources).to.be.an('array');",
+                  "    pm.expect(json.propertySources.length).to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8888/service-residents/default",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8888",
+              "path": ["service-residents", "default"]
+            }
+          }
+        },
+        {
+          "name": "4.2 - Configuration de service-incidents",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"PropertySources présentes\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.propertySources).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8888/service-incidents/default",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8888",
+              "path": ["service-incidents", "default"]
+            }
+          }
+        },
+        {
+          "name": "4.3 - Configuration de service-finances",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"PropertySources présentes\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.propertySources).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8888/service-finances/default",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8888",
+              "path": ["service-finances", "default"]
+            }
+          }
+        },
+        {
+          "name": "4.4 - Configuration de api-gateway",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"PropertySources présentes\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.propertySources).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8888/api-gateway/default",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8888",
+              "path": ["api-gateway", "default"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Démonstration Découverte Dynamique",
+      "item": [
+        {
+          "name": "5.1 - Test Service Demo via Gateway (Port 8080)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Message de découverte dynamique reçu\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.service).to.eql('service-demo');",
+                  "    pm.expect(json.status).to.eql('UP');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/service-demo/api/demo/hello",
+              "host": ["{{baseUrl}}"],
+              "path": ["service-demo", "api", "demo", "hello"]
+            }
+          }
+        }
+      ]
     }
   ]
 }

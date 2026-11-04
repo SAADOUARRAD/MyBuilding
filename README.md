@@ -138,85 +138,149 @@ classDiagram
 
 ---
 
-## 3. Schéma de l'Architecture (Les 5 Applications et leurs Ports)
+## 3. Schéma de l'Architecture (Les 6 Applications et leurs Ports)
 
-L'architecture globale repose sur **cinq applications** interconnectées pour assurer l'enregistrement, la découverte et le routage dynamique :
+L'architecture globale repose sur **six applications Spring Boot** interconnectées pour assurer la centralisation de configuration, l'enregistrement, la découverte et le routage :
 
 ```mermaid
 flowchart TB
     Client(["Client HTTP / Postman / Navigateur"])
 
-    subgraph Discovery ["1. Annuaire de Découverte"]
+    subgraph ConfigCenter ["0. Configuration Centralisée (Jalon V3)"]
+        ConfigServer["Config Server\n(config-server)\nPort : 8888\nLit config-repo/"]
+    end
+
+    subgraph Discovery ["1. Annuaire de Découverte (Jalon V2)"]
         Eureka["Eureka Server\n(eureka-server)\nPort : 8761\nhttp://localhost:8761"]
     end
 
-    subgraph GatewayApp ["2. Point d'Entrée Unique"]
+    subgraph GatewayApp ["2. Point d'Entrée Unique (Jalon V2)"]
         Gateway["API Gateway\n(api-gateway)\nPort : 8080\nhttp://localhost:8080"]
     end
 
-    subgraph MetierApps ["3, 4, 5. Les Trois Services Métier"]
+    subgraph MetierApps ["3, 4, 5. Les Trois Services Métier (Jalon V1)"]
         Residents["Service Residents\n(service-residents)\nPort : 8081\n• /api/residents/**\n• /api/apartments/**"]
         Incidents["Service Incidents\n(service-incidents)\nPort : 8082\n• /api/tickets/**\n• /api/work-orders/**"]
         Finances["Service Finances\n(service-finances)\nPort : 8083\n• /api/charges/**\n• /api/payments/**"]
     end
 
-    Client -->|Requêtes API / Frontend| Gateway
+    subgraph DemoApp ["6. Service de Démonstration (Découverte Dynamique)"]
+        Demo["Service Demo\n(service-demo)\nPort : 8099\n• /api/demo/hello"]
+    end
 
+    %% Chargement des configurations centralisées
+    Residents -->|spring.config.import| ConfigServer
+    Incidents -->|spring.config.import| ConfigServer
+    Finances -->|spring.config.import| ConfigServer
+    Gateway -->|spring.config.import| ConfigServer
+
+    %% Enregistrement Eureka
     Residents -.->|S'enregistre auprès de| Eureka
     Incidents -.->|S'enregistre auprès de| Eureka
     Finances -.->|S'enregistre auprès de| Eureka
+    Demo -.->|Découverte dynamique| Eureka
 
-    Gateway -.->|Découverte dynamique des services| Eureka
+    Gateway -.->|Résolution dynamique| Eureka
+    Client -->|Requêtes API| Gateway
 
-    Gateway ==>|Routage dynamique : lb://SERVICE-RESIDENTS| Residents
-    Gateway ==>|Routage dynamique : lb://SERVICE-INCIDENTS| Incidents
-    Gateway ==>|Routage dynamique : lb://SERVICE-FINANCES| Finances
+    Gateway ==>|Routage dynamique ou statique| Residents
+    Gateway ==>|Routage dynamique ou statique| Incidents
+    Gateway ==>|Routage dynamique ou statique| Finances
+    Gateway ==>|Découverte instantanée| Demo
 ```
 
-### Récapitulatif des 5 Applications :
+### Récapitulatif des Applications :
 
 | N° | Application | Nom Spring (`spring.application.name`) | Port | Rôle & Description |
 | :-: | :--- | :--- | :---: | :--- |
-| **1** | **Eureka Server** | `eureka-server` | **8761** | Annuaire centralisé d'enregistrement et de découverte des services |
-| **2** | **API Gateway** | `api-gateway` | **8080** | Passerelle unique avec routage dynamique et Load Balancing |
+| **0** | **Eureka Server** | `eureka-server` | **8761** | Annuaire centralisé d'enregistrement et de découverte *(Config locale)* |
+| **1** | **Config Server** | `config-server` | **8888** | Serveur centralisé de configuration Spring Cloud Config *(Config locale)* |
+| **2** | **API Gateway** | `api-gateway` | **8080** | Passerelle réactive avec routage dynamique et statique |
 | **3** | **Service Residents** | `service-residents` | **8081** | Gestion des résidents, des appartements et des soldes |
 | **4** | **Service Incidents** | `service-incidents` | **8082** | Gestion des tickets de pannes et des ordres de travail (artisans) |
 | **5** | **Service Finances** | `service-finances` | **8083** | Gestion des appels de charges, des paiements et du budget |
+| **6** | **Service Demo** | `service-demo` | **8099** | Preuve de découverte dynamique instantanée sans redémarrage de la Gateway |
 
 ---
 
-## 4. Routage Dynamique via l'API Gateway
+## 4. Routage API Gateway : Dynamique vs Statique (Jalon V2)
 
-Toutes les requêtes passent par l'API Gateway sur le port **8080**. Grâce à l'intégration avec Eureka (`lb://`), l'adresse et le port des services cibles sont résolus dynamiquement :
+La passerelle implémente les deux modes de routage requis par le **Jalon V2** :
 
-| Domaine Métier | Route d'accès Gateway (Port 8080) | Destination Résolue via Eureka |
-| :--- | :--- | :--- |
-| **Résidents** | `GET http://localhost:8080/api/residents` | `lb://SERVICE-RESIDENTS/api/residents` |
-| **Appartements**| `GET http://localhost:8080/api/apartments` | `lb://SERVICE-RESIDENTS/api/apartments` |
-| **Tickets** | `GET http://localhost:8080/api/tickets` | `lb://SERVICE-INCIDENTS/api/tickets` |
-| **Ordres de travail** | `GET http://localhost:8080/api/work-orders` | `lb://SERVICE-INCIDENTS/api/work-orders` |
-| **Charges** | `GET http://localhost:8080/api/charges` | `lb://SERVICE-FINANCES/api/charges` |
-| **Paiements** | `GET http://localhost:8080/api/payments` | `lb://SERVICE-FINANCES/api/payments` |
+### A. Mode Dynamique (par défaut)
+Activé via le Discovery Locator Eureka (`spring.cloud.gateway.discovery.locator.enabled=true`).  
+Les routes sont créées automatiquement à partir du nom des services enregistrés dans Eureka :
+* **Résidents** : `http://localhost:8080/service-residents/api/residents`
+* **Appartements** : `http://localhost:8080/service-residents/api/apartments`
+* **Tickets** : `http://localhost:8080/service-incidents/api/tickets`
+* **Ordres de travail** : `http://localhost:8080/service-incidents/api/work-orders`
+* **Charges** : `http://localhost:8080/service-finances/api/charges`
+* **Paiements** : `http://localhost:8080/service-finances/api/payments`
 
-Routage par Discovery Locator également disponible :  
-`http://localhost:8080/<service-name>/...` (ex: `http://localhost:8080/service-residents/api/residents`).
+Lancement standard :
+```bash
+mvn -pl api-gateway spring-boot:run
+```
+
+### B. Mode Statique (Profil `statique`)
+Désactive le discovery locator (`enabled=false`) et utilise des routes explicites déclarées avec `lb://` sans préfixe de service :
+* **Résidents** : `http://localhost:8080/api/residents`
+* **Tickets** : `http://localhost:8080/api/tickets`
+* **Charges** : `http://localhost:8080/api/charges`
+
+Lancement avec le profil statique :
+```bash
+mvn -pl api-gateway spring-boot:run -Dspring-boot.run.profiles=statique
+```
+
+### C. Démonstration de Découverte Dynamique (`service-demo`)
+Pour prouver qu'un nouveau service est immédiatement accessible via la Gateway **sans redémarrer la Gateway et sans ajouter de route** :
+1. Démarrer `eureka-server`, `config-server` et `api-gateway`.
+2. Démarrer le service de démo :
+   ```bash
+   mvn spring-boot:run -Pdemo -pl service-demo
+   ```
+3. Après ~30 secondes (enregistrement Eureka), interroger via la Gateway :
+   ```bash
+   curl http://localhost:8080/service-demo/api/demo/hello
+   ```
+   Réponse `200 OK` avec le message de confirmation !
 
 ---
 
-## 5. Démarrage et Validation
+## 5. Centralisation des Configurations (Jalon V3 - Spring Cloud Config)
 
-### Ordre de lancement :
-1. **`eureka-server`** (port 8761) — Interface web : [http://localhost:8761](http://localhost:8761)
-2. **`service-residents`** (port 8081)
-3. **`service-incidents`** (port 8082)
-4. **`service-finances`** (port 8083)
-5. **`api-gateway`** (port 8080)
+Le dossier centralisé versionné `config-repo/` contient la configuration de tous les microservices clients :
+* `config-repo/application.properties` : Propriétés partagées (URL Eureka, Actuator).
+* `config-repo/service-residents.properties` : Port 8081, BDD H2 `residentsdb`, JPA Hibernate.
+* `config-repo/service-incidents.properties` : Port 8082, BDD H2 `incidentsdb`, JPA Hibernate.
+* `config-repo/service-finances.properties` : Port 8083, BDD H2 `financesdb`, JPA Hibernate.
+* `config-repo/api-gateway.properties` : Port 8080, Discovery Locator et Actuator Gateway.
 
-Une fois tous les services démarrés, Eureka affiche les 4 clients connectés avec le statut **UP**.
+### Configuration locale minimale & Fail-Fast :
+Chaque service client n'a plus qu'un fichier local minimal `src/main/resources/application.properties` :
+```properties
+spring.application.name=service-residents
+spring.config.import=configserver:http://localhost:8888
+```
+*(L'absence du préfixe `optional:` garantit le **Fail-Fast** : si le Config Server est inaccessible, le microservice s'arrête immédiatement).*
 
 ---
 
-## 6. Versionnage Git & Jalon Livré
+## 6. Ordre de Démarrage et Validation
 
-* **Tag officiel du jalon** : `v1.0` (`jalon-1` / `v1.0.0-jalon1`)
+### Ordre de lancement strict :
+1. **`eureka-server`** (port 8761) — Annuaire de découverte *(Config locale)*
+2. **`config-server`** (port 8888) — Serveur de configuration *(Config locale)*
+3. **`service-residents`** (port 8081) — Charge sa config depuis le port 8888
+4. **`service-incidents`** (port 8082) — Charge sa config depuis le port 8888
+5. **`service-finances`** (port 8083) — Charge sa config depuis le port 8888
+6. **`api-gateway`** (port 8080) — Charge sa config depuis le port 8888
+
+---
+
+## 7. Versionnage Git & Jalons Livrés
+
+* **Jalon V0 & V1** : Tags `v1.0` / `jalon-1`
+* **Jalon V2 & V3** : Tag recommandé `v3.0.0-jalon3`
 * **Dépôt GitHub** : [https://github.com/SAADOUARRAD/MyBuilding](https://github.com/SAADOUARRAD/MyBuilding)
