@@ -2,6 +2,9 @@ package com.mybuilding.finances.controller;
 
 import com.mybuilding.finances.dto.ChargeRequestDTO;
 import com.mybuilding.finances.dto.ChargeResponseDTO;
+import com.mybuilding.finances.dto.ChargeResponseFullDTO;
+import com.mybuilding.finances.model.Charge;
+import com.mybuilding.finances.model.StatutCharge;
 import com.mybuilding.finances.repository.ChargeRepository;
 import com.mybuilding.finances.service.ChargeService;
 import jakarta.annotation.PostConstruct;
@@ -27,9 +30,24 @@ public class ChargeController {
 
     @PostConstruct
     public void initData() {
+        // Initialisation directe via le repository pour éviter les appels Feign au démarrage
+        // (service-residents peut ne pas encore être UP lors du démarrage)
         if (chargeRepository.count() == 0) {
-            chargeService.create(new ChargeRequestDTO(1L, "2026-11", new BigDecimal("1500.00")));
-            chargeService.create(new ChargeRequestDTO(2L, "2026-11", new BigDecimal("1200.00")));
+            Charge c1 = new Charge();
+            c1.setApartmentId(1L);
+            c1.setPeriode("2026-11");
+            c1.setMontant(new BigDecimal("1500.00"));
+            c1.setMontantPaye(BigDecimal.ZERO);
+            c1.setStatut(StatutCharge.EMISE);
+            chargeRepository.save(c1);
+
+            Charge c2 = new Charge();
+            c2.setApartmentId(2L);
+            c2.setPeriode("2026-11");
+            c2.setMontant(new BigDecimal("1200.00"));
+            c2.setMontantPaye(BigDecimal.ZERO);
+            c2.setStatut(StatutCharge.EMISE);
+            chargeRepository.save(c2);
         }
     }
 
@@ -41,6 +59,11 @@ public class ChargeController {
     @GetMapping("/{id}")
     public ResponseEntity<ChargeResponseDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(chargeService.getById(id));
+    }
+
+    @GetMapping("/{id}/detail")
+    public ResponseEntity<ChargeResponseFullDTO> getDetailById(@PathVariable Long id) {
+        return ResponseEntity.ok(chargeService.getChargeFullById(id));
     }
 
     @GetMapping("/apartment/{apartmentId}")

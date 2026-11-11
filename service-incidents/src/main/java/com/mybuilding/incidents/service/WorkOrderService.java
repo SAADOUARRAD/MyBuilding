@@ -2,6 +2,7 @@ package com.mybuilding.incidents.service;
 
 import com.mybuilding.incidents.dto.WorkOrderRequestDTO;
 import com.mybuilding.incidents.dto.WorkOrderResponseDTO;
+import com.mybuilding.incidents.dto.WorkOrderResponseFullDTO;
 import com.mybuilding.incidents.model.StatutWorkOrder;
 
 import java.math.BigDecimal;
@@ -15,4 +16,7 @@ public interface WorkOrderService {
     WorkOrderResponseDTO updateStatus(Long id, StatutWorkOrder newStatus);
     WorkOrderResponseDTO close(Long id, BigDecimal finalCost);
     void delete(Long id);
+
+    // Jalon V4 - Élément 2 : Agrégation enrichie
+    WorkOrderResponseFullDTO getWorkOrderFullById(Long id);
 }

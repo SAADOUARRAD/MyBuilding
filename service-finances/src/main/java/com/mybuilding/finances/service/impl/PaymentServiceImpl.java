@@ -2,6 +2,8 @@ package com.mybuilding.finances.service.impl;
 
 import com.mybuilding.finances.dto.PaymentRequestDTO;
 import com.mybuilding.finances.dto.PaymentResponseDTO;
+import com.mybuilding.finances.feignClient.ApartmentDTO;
+import com.mybuilding.finances.feignClient.ResidentsFeignClient;
 import com.mybuilding.finances.mapper.FinanceMapper;
 import com.mybuilding.finances.model.Charge;
 import com.mybuilding.finances.model.Payment;
@@ -15,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -24,11 +28,16 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final ChargeRepository chargeRepository;
     private final FinanceMapper financeMapper;
+    private final ResidentsFeignClient residentsFeignClient;
 
-    public PaymentServiceImpl(PaymentRepository paymentRepository, ChargeRepository chargeRepository, FinanceMapper financeMapper) {
+    public PaymentServiceImpl(PaymentRepository paymentRepository,
+                              ChargeRepository chargeRepository,
+                              FinanceMapper financeMapper,
+                              ResidentsFeignClient residentsFeignClient) {
         this.paymentRepository = paymentRepository;
         this.chargeRepository = chargeRepository;
         this.financeMapper = financeMapper;
+        this.residentsFeignClient = residentsFeignClient;
     }
 
     @Override
@@ -59,6 +68,19 @@ public class PaymentServiceImpl implements PaymentService {
 
         Payment payment = financeMapper.toEntity(dto);
         Payment saved = paymentRepository.save(payment);
+
+        // --- Jalon V4 : Mise à jour du solde du résident via OpenFeign ---
+        // Après paiement, on déduit le montant du solde du résident (delta négatif)
+        try {
+            ApartmentDTO apartment = residentsFeignClient.getApartmentById(charge.getApartmentId());
+            if (apartment != null && apartment.getResidentId() != null) {
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("delta", dto.getMontant().negate()); // delta négatif = débit
+                residentsFeignClient.updateResidentSolde(apartment.getResidentId(), payload);
+            }
+        } catch (Exception e) {
+            // On logue mais on ne fait pas échouer le paiement si le service est temporairement indisponible
+        }
 
         return financeMapper.toResponseDTO(saved);
     }

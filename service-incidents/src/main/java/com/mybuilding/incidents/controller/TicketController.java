@@ -2,8 +2,10 @@ package com.mybuilding.incidents.controller;
 
 import com.mybuilding.incidents.dto.TicketRequestDTO;
 import com.mybuilding.incidents.dto.TicketResponseDTO;
+import com.mybuilding.incidents.dto.TicketResponseFullDTO;
 import com.mybuilding.incidents.model.PrioriteTicket;
 import com.mybuilding.incidents.model.StatutTicket;
+import com.mybuilding.incidents.model.Ticket;
 import com.mybuilding.incidents.repository.TicketRepository;
 import com.mybuilding.incidents.service.TicketService;
 import jakarta.annotation.PostConstruct;
@@ -30,8 +32,8 @@ public class TicketController {
     @PostConstruct
     public void initData() {
         if (ticketRepository.count() == 0) {
-            ticketService.create(new TicketRequestDTO(1L, "Fuite d'eau au robinet de la cuisine", PrioriteTicket.HAUTE));
-            ticketService.create(new TicketRequestDTO(2L, "Panne interphone entrée principale", PrioriteTicket.MOYENNE));
+            ticketRepository.save(new Ticket(1L, "Fuite d'eau au robinet de la cuisine", PrioriteTicket.HAUTE));
+            ticketRepository.save(new Ticket(2L, "Panne interphone entrée principale", PrioriteTicket.MOYENNE));
         }
     }
 
@@ -43,6 +45,11 @@ public class TicketController {
     @GetMapping("/{id}")
     public ResponseEntity<TicketResponseDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(ticketService.getById(id));
+    }
+
+    @GetMapping("/{id}/detail")
+    public ResponseEntity<TicketResponseFullDTO> getDetailById(@PathVariable Long id) {
+        return ResponseEntity.ok(ticketService.getTicketFullById(id));
     }
 
     @GetMapping("/apartment/{apartmentId}")
