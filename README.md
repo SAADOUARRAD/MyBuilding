@@ -279,8 +279,39 @@ spring.config.import=configserver:http://localhost:8888
 
 ---
 
-## 7. Versionnage Git & Jalons Livrés
+## 7. Communication Synchrone Inter-Services (Jalon V4 - OpenFeign)
+
+Le Jalon V4 implémente la communication synchrone directe entre microservices via **Spring Cloud OpenFeign** et **Spring Cloud LoadBalancer** (nom d'enregistrement Eureka direct, sans transiter par la Gateway).
+
+### A. Clients OpenFeign Fortement Typés & DTO Dédiés
+* **`service-incidents`** :
+  * Client : `ResidentsFeignClient` (`@FeignClient(name = "service-residents")`)
+  * DTOs dédiés : `ApartmentDTO`, `ResidentDTO`
+  * Validation préalable : lors de la création d'un Ticket (`POST /api/tickets`), appel Feign vers `GET /api/apartments/{id}` pour valider l'existence de l'appartement avant insertion. Si l'appartement est inexistant, levée d'une exception 404.
+* **`service-finances`** :
+  * Client : `ResidentsFeignClient` (`@FeignClient(name = "service-residents")`)
+  * DTOs dédiés : `ApartmentDTO`, `ResidentDTO`
+  * Validation préalable : lors de l'émission d'une Charge (`POST /api/charges`), validation préalable de l'appartement via Feign.
+  * Mise à jour distante : lors de l'enregistrement d'un Règlement (`POST /api/payments`), appel `PATCH /api/residents/{id}/solde` via Feign pour débiter le solde du résident en cohérence.
+
+### B. Agrégation et Consultation Enrichie (DTOs Composés)
+Chaque service expose un endpoint de consultation enrichie retournant un **DTO composé** combinant les données locales et les données distantes collectées via OpenFeign :
+* **`GET /api/tickets/{id}/detail`** : retourne `TicketResponseFullDTO` (ticket local + numéro appartement, étage, superficie + nom, email, téléphone, rôle du résident).
+* **`GET /api/work-orders/{id}/detail`** : retourne `WorkOrderResponseFullDTO` (intervention locale + description du ticket + appartement + résident).
+* **`GET /api/charges/{id}/detail`** : retourne `ChargeResponseFullDTO` (charge locale + numéro appartement, étage, superficie + nom, email, téléphone du résident).
+
+### C. Gestion Centralisée des Erreurs Feign (`GlobalExceptionHandler`)
+Conformément au barème d'évaluation V4 :
+* `IllegalArgumentException` -> **400 Bad Request**
+* `FeignException.NotFound` -> **404 Not Found** (ressource distante introuvable)
+* `FeignException` avec statut `-1` ou `503` -> **503 Service Unavailable** (service distant arrêté / injoignable)
+* Autre `FeignException` -> **502 Bad Gateway**
+
+---
+
+## 8. Versionnage Git & Jalons Livrés
 
 * **Jalon V0 & V1** : Tags `v1.0` / `jalon-1`
-* **Jalon V2 & V3** : Tag recommandé `v3.0.0-jalon3`
+* **Jalon V2 & V3** : Tag `v3.0.0-jalon3`
+* **Jalon V4** : Tag `v4.0.0-jalon4` (Communication synchrone OpenFeign & DTOs composés)
 * **Dépôt GitHub** : [https://github.com/SAADOUARRAD/MyBuilding](https://github.com/SAADOUARRAD/MyBuilding)

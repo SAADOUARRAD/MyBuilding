@@ -2,6 +2,7 @@ package com.mybuilding.finances.service;
 
 import com.mybuilding.finances.dto.ChargeRequestDTO;
 import com.mybuilding.finances.dto.ChargeResponseDTO;
+import com.mybuilding.finances.dto.ChargeResponseFullDTO;
 
 import java.util.List;
 
@@ -12,4 +13,7 @@ public interface ChargeService {
     List<ChargeResponseDTO> getByApartmentId(Long apartmentId);
     List<ChargeResponseDTO> getUnpaid();
     void delete(Long id);
+
+    // Jalon V4 - Élément 2 : Agrégation enrichie
+    ChargeResponseFullDTO getChargeFullById(Long id);
 }

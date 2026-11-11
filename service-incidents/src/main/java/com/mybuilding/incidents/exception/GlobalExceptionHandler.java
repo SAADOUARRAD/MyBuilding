@@ -1,5 +1,6 @@
 package com.mybuilding.incidents.exception;
 
+import feign.FeignException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -41,6 +42,51 @@ public class GlobalExceptionHandler {
         body.put("errors", fieldErrors);
         body.put("path", request.getDescription(false).replace("uri=", ""));
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    // --- Gestion des erreurs OpenFeign (Jalon V4) ---
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("error", "Bad Request");
+        body.put("message", ex.getMessage());
+        body.put("path", request.getDescription(false).replace("uri=", ""));
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(FeignException.NotFound.class)
+    public ResponseEntity<Map<String, Object>> handleFeignNotFound(FeignException.NotFound ex, WebRequest request) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.NOT_FOUND.value());
+        body.put("error", "404 NOT_FOUND");
+        body.put("message", "Ressource distante introuvable dans service-residents (ex: appartement inexistant)");
+        body.put("path", request.getDescription(false).replace("uri=", ""));
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(FeignException.class)
+    public ResponseEntity<Map<String, Object>> handleFeignException(FeignException ex, WebRequest request) {
+        HttpStatus status;
+        String error;
+        if (ex.status() == -1 || ex.status() == 503) {
+            status = HttpStatus.SERVICE_UNAVAILABLE; // 503
+            error = "Service Unavailable";
+        } else {
+            status = HttpStatus.BAD_GATEWAY; // 502
+            error = "Bad Gateway";
+        }
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", status.value());
+        body.put("error", error);
+        body.put("message", "Erreur de communication inter-service OpenFeign : " + ex.getMessage());
+        body.put("path", request.getDescription(false).replace("uri=", ""));
+        return new ResponseEntity<>(body, status);
     }
 
     @ExceptionHandler(Exception.class)

@@ -2,7 +2,11 @@ package com.mybuilding.incidents.controller;
 
 import com.mybuilding.incidents.dto.WorkOrderRequestDTO;
 import com.mybuilding.incidents.dto.WorkOrderResponseDTO;
+import com.mybuilding.incidents.dto.WorkOrderResponseFullDTO;
 import com.mybuilding.incidents.model.StatutWorkOrder;
+import com.mybuilding.incidents.model.Ticket;
+import com.mybuilding.incidents.model.WorkOrder;
+import com.mybuilding.incidents.repository.TicketRepository;
 import com.mybuilding.incidents.repository.WorkOrderRepository;
 import com.mybuilding.incidents.service.WorkOrderService;
 import jakarta.annotation.PostConstruct;
@@ -22,16 +26,28 @@ public class WorkOrderController {
 
     private final WorkOrderService workOrderService;
     private final WorkOrderRepository workOrderRepository;
+    private final TicketRepository ticketRepository;
 
-    public WorkOrderController(WorkOrderService workOrderService, WorkOrderRepository workOrderRepository) {
+    public WorkOrderController(WorkOrderService workOrderService,
+                               WorkOrderRepository workOrderRepository,
+                               TicketRepository ticketRepository) {
         this.workOrderService = workOrderService;
         this.workOrderRepository = workOrderRepository;
+        this.ticketRepository = ticketRepository;
     }
 
     @PostConstruct
     public void initData() {
+        // Initialisation directe via le repository pour éviter les appels Feign au démarrage
         if (workOrderRepository.count() == 0) {
-            workOrderService.create(new WorkOrderRequestDTO(1L, "Plomberie Express", LocalDate.now().plusDays(1), new BigDecimal("450.00")));
+            ticketRepository.findById(1L).ifPresent(ticket -> {
+                WorkOrder wo = new WorkOrder();
+                wo.setTicketId(1L);
+                wo.setArtisan("Plomberie Express");
+                wo.setDateIntervention(LocalDate.now().plusDays(1));
+                wo.setCout(new BigDecimal("450.00"));
+                workOrderRepository.save(wo);
+            });
         }
     }
 
@@ -43,6 +59,11 @@ public class WorkOrderController {
     @GetMapping("/{id}")
     public ResponseEntity<WorkOrderResponseDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(workOrderService.getById(id));
+    }
+
+    @GetMapping("/{id}/detail")
+    public ResponseEntity<WorkOrderResponseFullDTO> getDetailById(@PathVariable Long id) {
+        return ResponseEntity.ok(workOrderService.getWorkOrderFullById(id));
     }
 
     @GetMapping("/ticket/{ticketId}")
